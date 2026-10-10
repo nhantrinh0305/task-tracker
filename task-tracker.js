@@ -22,7 +22,19 @@ function userInput(args = process.argv.slice(2)) {
         return updateTask(Number(value), description.trim());
     }
 
-    throw new Error('Please use one of these commands: "add" or "update".');
+    if (command === "delete") {
+        if (
+            args.length !== 2 ||
+            !/^[1-9]\d*$/.test(value) ||
+            !Number.isSafeInteger(Number(value))
+        ) {
+            throw new Error("Usage: node task-tracker.js delete <positive integer ID>");
+        }
+
+        return deleteTask(Number(value));
+    }
+
+    throw new Error('Please use one of these commands: "add", "update", or "delete".');
 }
 
 function addTask(description) {
@@ -64,6 +76,24 @@ function updateTask(id, description) {
     fs.writeFileSync(filePath, JSON.stringify(tasks, null, 2), "utf8");
 
     return `Task updated successfully (ID: ${id})`;
+}
+
+function deleteTask(id) {
+    const fs = require("node:fs");
+    const filePath = "tasks.json";
+    const tasks = fs.existsSync(filePath)
+        ? JSON.parse(fs.readFileSync(filePath, "utf8"))
+        : [];
+    const taskIndex = tasks.findIndex(task => task.id === id);
+
+    if (taskIndex === -1) {
+        throw new Error(`404: Task not found (ID: ${id})`);
+    }
+
+    tasks.splice(taskIndex, 1);
+    fs.writeFileSync(filePath, JSON.stringify(tasks, null, 2), "utf8");
+
+    return `Task ${id} deleted successfully`;
 }
 
 try {
