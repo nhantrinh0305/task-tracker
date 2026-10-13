@@ -50,7 +50,43 @@ function userInput(args = process.argv.slice(2)) {
         return markTask(Number(id), status);
     }
 
-    throw new Error('Please use one of these commands: "add", "update", "delete", or "mark".');
+    if (command === "list") {
+        const status = value === "to-do" ? "todo" : value;
+
+        if (
+            args.length > 2 ||
+            (args.length === 2 && !["todo", "in-progress", "done"].includes(status))
+        ) {
+            throw new Error("Usage: node task-tracker.js list [todo|to-do|in-progress|done]");
+        }
+
+        return listTasks(status);
+    }
+
+    throw new Error('Please use one of these commands: "add", "update", "delete", "mark", or "list".');
+}
+
+function listTasks(status) {
+    const fs = require("node:fs");
+    const filePath = "tasks.json";
+    const tasks = fs.existsSync(filePath)
+        ? JSON.parse(fs.readFileSync(filePath, "utf8"))
+        : [];
+    const matchingTasks = status === undefined
+        ? tasks
+        : tasks.filter(task => task.status === status);
+
+    if (matchingTasks.length === 0) {
+        return status === undefined
+            ? "No tasks found."
+            : `No tasks found with status: ${status}.`;
+    }
+
+    return matchingTasks
+        .map(({ description, status: taskStatus }) => status === undefined
+            ? `${description} (${taskStatus})`
+            : description)
+        .join("\n");
 }
 
 function addTask(description) {
