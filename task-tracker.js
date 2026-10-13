@@ -34,7 +34,23 @@ function userInput(args = process.argv.slice(2)) {
         return deleteTask(Number(value));
     }
 
-    throw new Error('Please use one of these commands: "add", "update", or "delete".');
+    if (command === "mark") {
+        const status = value === "to-do" ? "todo" : value;
+        const id = args[2];
+
+        if (
+            args.length !== 3 ||
+            !["todo", "in-progress", "done"].includes(status) ||
+            !/^[1-9]\d*$/.test(id) ||
+            !Number.isSafeInteger(Number(id))
+        ) {
+            throw new Error("Usage: node task-tracker.js mark <todo|to-do|in-progress|done> <positive integer ID>");
+        }
+
+        return markTask(Number(id), status);
+    }
+
+    throw new Error('Please use one of these commands: "add", "update", "delete", or "mark".');
 }
 
 function addTask(description) {
@@ -94,6 +110,25 @@ function deleteTask(id) {
     fs.writeFileSync(filePath, JSON.stringify(tasks, null, 2), "utf8");
 
     return `Task ${id} deleted successfully`;
+}
+
+function markTask(id, status) {
+    const fs = require("node:fs");
+    const filePath = "tasks.json";
+    const tasks = fs.existsSync(filePath)
+        ? JSON.parse(fs.readFileSync(filePath, "utf8"))
+        : [];
+    const task = tasks.find(task => task.id === id);
+
+    if (!task) {
+        throw new Error(`404: Task not found (ID: ${id})`);
+    }
+
+    task.status = status;
+    task.updatedAt = new Date().toISOString();
+    fs.writeFileSync(filePath, JSON.stringify(tasks, null, 2), "utf8");
+
+    return `Task ${id} marked as ${status} successfully`;
 }
 
 try {
